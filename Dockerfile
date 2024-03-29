@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:1.1-php8.3-alpine AS base
+FROM php
 
 # We put our HTTPS apps behind a load balancer, so all internal traffic is HTTP port 80
 ENV SERVER_NAME=:80
