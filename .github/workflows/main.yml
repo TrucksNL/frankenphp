@@ -23,8 +23,8 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: |
-          trucksnl/php-fpm
-          ghcr.io/trucksnl/php-fpm
+          trucksnl/frankenphp
+          ghcr.io/trucksnl/frankenphp
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
