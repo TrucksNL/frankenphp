@@ -13,7 +13,6 @@ RUN apk add --no-cache \
 RUN install-php-extensions \
     bcmath \
     gd \
-    grpc \
     intl \
     mongodb-stable \
     mysqli \
