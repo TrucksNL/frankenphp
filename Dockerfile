@@ -4,6 +4,9 @@ FROM php
 ENV SERVER_NAME=:80
 
 RUN apk add --no-cache \
+    acl \
+    file \
+	gettext \
     git \
     openssh
 
