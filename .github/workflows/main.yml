@@ -54,10 +54,10 @@ jobs:
           linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
         build-contexts: |
-          php=docker-image://dunglas/frankenphp:${ matrix.frankenphp-version }-php${{ matrix.php-version }}-alpine
+          php=docker-image://dunglas/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine
         labels: ${{ steps.meta.outputs.labels }}
         tags: |
-          trucksnl/frankenphp:${ matrix.frankenphp-version }-php${{ matrix.php-version }}-alpine
-          trucksnl/frankenphp:${ matrix.frankenphp-version }-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
-          ghcr.io/trucksnl/frankenphp:${ matrix.frankenphp-version }-php${{ matrix.php-version }}-alpine
-          ghcr.io/trucksnl/frankenphp:${ matrix.frankenphp-version }-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
+          trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine
+          trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
+          ghcr.io/trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine
+          ghcr.io/trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
