@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         php-version: ['8.2', '8.3']
-        frankenphp-version: ['1.1', '1.2']
+        frankenphp-version: ['1.2', '1.3']
     steps:
     - name: Git checkout
       uses: actions/checkout@v4
