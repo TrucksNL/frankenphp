@@ -15,7 +15,6 @@ jobs:
     strategy:
       matrix:
         php-version: ['8.3', '8.4']
-        frankenphp-version: ['1.2', '1.3']
     steps:
     - name: Git checkout
       uses: actions/checkout@v4
@@ -54,10 +53,10 @@ jobs:
           linux/arm64
         push: ${{ github.event_name != 'pull_request' }}
         build-contexts: |
-          php=docker-image://dunglas/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine
+          php=docker-image://dunglas/frankenphp:1.3-php${{ matrix.php-version }}-alpine
         labels: ${{ steps.meta.outputs.labels }}
         tags: |
-          trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine
-          trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
-          ghcr.io/trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine
-          ghcr.io/trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
+          trucksnl/frankenphp:1.3-php${{ matrix.php-version }}-alpine
+          trucksnl/frankenphp:1.3-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
+          ghcr.io/trucksnl/frankenphp:1.3-php${{ matrix.php-version }}-alpine
+          ghcr.io/trucksnl/frankenphp:1.3-php${{ matrix.php-version }}-alpine-v${{ github.run_number }}
