@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM php
 
 ENV APP_RUNTIME=Runtime\\FrankenPhpSymfony\\Runtime
