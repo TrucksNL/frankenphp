@@ -92,8 +92,8 @@ jobs:
       - build
     strategy:
       matrix:
-        os-flavour: ["alpine", "bookworm"]
-        php-version: ["8.3", "8.4"]
+        os-flavour: ["alpine"]
+        php-version: ["8.3"]
         frankenphp-version: ["1.4"]
     steps:
       - name: Download digests
