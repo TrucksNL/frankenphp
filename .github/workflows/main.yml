@@ -10,13 +10,12 @@ on:
 
 jobs:
   build-and-push-image:
-    runs-on: ${{ matrix.image }}
+    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
         frankenphp-version: ["1.4"]
         php-version: ["8.3", "8.4"]
-        image: ["ubuntu-latest", "ubuntu-24.04-arm"]
         os-flavour: ["alpine", "bookworm"]
     steps:
       - name: Git checkout
@@ -28,8 +27,14 @@ jobs:
           images: |
             trucksnl/frankenphp
             ghcr.io/trucksnl/frankenphp
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -46,13 +51,14 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          file: ./${{ matrix.os-flavour }}.Dockerfile
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: ${{ github.event_name != 'pull_request' }}
           build-contexts: |
             php=docker-image://dunglas/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          file: ./${{ matrix.os-flavour }}.Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
             trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
             trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
