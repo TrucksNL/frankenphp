@@ -22,7 +22,7 @@ jobs:
           - linux/amd64
           - linux/arm64
         frankenphp-version: ["1.4"]
-        php-version: ["8.3"]
+        php-version: ["8.3", "8.4"]
         os-flavour: ["alpine", "bookworm"]
     steps:
       - name: Prepare
@@ -81,7 +81,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ matrix.os-flavour }}-${{ env.PLATFORM_PAIR }}
+          name: digests-${{ matrix.php-version }}-${{ matrix.os-flavour }}-${{ env.PLATFORM_PAIR }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -93,13 +93,14 @@ jobs:
     strategy:
       matrix:
         os-flavour: ["alpine", "bookworm"]
-        php-version: ["8.3"]
+        php-version: ["8.3", "8.4"]
+        frankenphp-version: ["1.4"]
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: digests-${{ matrix.os-flavour }}-*
+          pattern: digests-${{ matrix.php-version }}-${{ matrix.os-flavour }}-*
           merge-multiple: true
 
       - name: Login to Docker Hub
@@ -126,8 +127,8 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}
             ${{ env.GHCR_REPO }}
           tags: |
-            1.4-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
-            1.4-php$(( matrix.php-version ))-${{ matrix.os-flavour }}-v${{ github.run_number }}
+            ${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
+            ${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
@@ -139,5 +140,5 @@ jobs:
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.DOCKERHUB_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
-          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
+          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
