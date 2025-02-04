@@ -8,35 +8,49 @@ on:
   schedule:
     - cron: "0 2 * * 0"
 
+env:
+  DOCKERHUB_REPO: trucksnl/frankenphp
+  GHCR_REPO: ghcr.io/trucksnl/frankenphp
+
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ startsWith(matrix.platform, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
         frankenphp-version: ["1.4"]
-        php-version: ["8.3", "8.4"]
-        os-flavour: ["alpine", "bookworm"]
+        php-version: ["8.3"]
+        os-flavour: ["bookworm"]
     steps:
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      
       - name: Git checkout
         uses: actions/checkout@v4
+      
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
-            trucksnl/frankenphp
-            ghcr.io/trucksnl/frankenphp
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+            ${{ env.DOCKERHUB_REPO }}
+            ${{ env.GHCR_REPO }}
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
       - name: Login to GHCR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -44,7 +58,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push Docker image
+      
+      - name: Build and push by digest
         uses: docker/build-push-action@v6
         with:
           build-contexts: |
@@ -53,10 +68,74 @@ jobs:
           cache-to: type=gha,mode=max
           file: ./${{ matrix.os-flavour }}.Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          outputs: type=image,"name=${{ env.DOCKERHUB_REPO }},${{ env.GHCR_REPO }}",push-by-digest=true,name-canonical=true,push=true
+          platforms: ${{ matrix.platform }}
           push: ${{ github.event_name != 'pull_request' }}
+      
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-24.04-arm
+    needs:
+      - build
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DOCKERHUB_REPO }}
+            ${{ env.GHCR_REPO }}
           tags: |
-            trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
-            trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
-            ghcr.io/trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
-            ghcr.io/trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
+            ${{ env.DOCKERHUB_REPO }}:1.4-php8.3-bookworm
+            ${{ env.DOCKERHUB_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
+            ${{ env.GHCR_REPO }}:1.4-php8.3-bookworm
+            ${{ env.GHCR_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
+
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.DOCKERHUB_REPO }}@sha256:%s ' *)
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.GHCR_REPO }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.DOCKERHUB_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
+          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
