@@ -123,10 +123,8 @@ jobs:
             ${{ env.DOCKERHUB_REPO }}
             ${{ env.GHCR_REPO }}
           tags: |
-            ${{ env.DOCKERHUB_REPO }}:1.4-php8.3-bookworm
-            ${{ env.DOCKERHUB_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
-            ${{ env.GHCR_REPO }}:1.4-php8.3-bookworm
-            ${{ env.GHCR_REPO }}:1.4-php8.3-bookworm-v${{ github.run_number }}
+            1.4-php8.3-bookworm
+            1.4-php8.3-bookworm-v${{ github.run_number }}
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
