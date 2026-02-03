@@ -94,8 +94,8 @@ jobs:
     strategy:
       matrix:
         os-flavour: ["alpine"]
-        php-version: ["8.3"]
-        frankenphp-version: ["1.4"]
+        php-version: ["8.3", "8.4"]
+        frankenphp-version: ["1.11"]
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
