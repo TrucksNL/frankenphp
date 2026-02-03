@@ -22,8 +22,8 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-        frankenphp-version: ["1.4"]
-        php-version: ["8.3"]
+        frankenphp-version: ["1.11"]
+        php-version: ["8.3", "8.4"]
         os-flavour: ["alpine"]
     steps:
       - name: Prepare
