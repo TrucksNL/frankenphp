@@ -12,9 +12,27 @@ on:
 env:
   DOCKERHUB_REPO: trucksnl/frankenphp
   GHCR_REPO: ghcr.io/trucksnl/frankenphp
+  PHP_VERSIONS: '["8.3", "8.4"]'
+  FRANKENPHP_VERSIONS: '["1.11"]'
+  OS_FLAVOURS: '["alpine"]'
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      php-versions: ${{ steps.set-vars.outputs.php-versions }}
+      frankenphp-versions: ${{ steps.set-vars.outputs.frankenphp-versions }}
+      os-flavours: ${{ steps.set-vars.outputs.os-flavours }}
+    steps:
+      - name: Set shared variables
+        id: set-vars
+        run: |
+          echo 'php-versions=${{ env.PHP_VERSIONS }}' >> $GITHUB_OUTPUT
+          echo 'frankenphp-versions=${{ env.FRANKENPHP_VERSIONS }}' >> $GITHUB_OUTPUT
+          echo 'os-flavours=${{ env.OS_FLAVOURS }}' >> $GITHUB_OUTPUT
+
   build:
+    needs: setup
     runs-on: ${{ startsWith(matrix.platform, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
@@ -22,9 +40,9 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-        frankenphp-version: ["1.11"]
-        php-version: ["8.3", "8.4"]
-        os-flavour: ["alpine"]
+        frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
+        os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
+        php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
     steps:
       - name: Prepare
         run: |
@@ -90,12 +108,13 @@ jobs:
   merge:
     runs-on: ubuntu-24.04-arm
     needs:
+      - setup
       - build
     strategy:
       matrix:
-        os-flavour: ["alpine"]
-        php-version: ["8.3", "8.4"]
-        frankenphp-version: ["1.11"]
+        frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
+        os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
+        php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
