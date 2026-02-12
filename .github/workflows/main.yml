@@ -192,6 +192,7 @@ jobs:
           cache-to: type=gha,mode=max
           context: test/demo
           file: test/demo/Dockerfile
+          load: true
           push: false
           tags: demo-test:${{ github.run_number }}
 
