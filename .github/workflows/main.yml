@@ -187,7 +187,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-contexts: |
-            php=docker-image://trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-${{ github.run_number }}
+            php=docker-image://trucksnl/frankenphp:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: test/demo
