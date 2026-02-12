@@ -172,6 +172,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
+        os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
         php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
     steps:
       - name: Git checkout
