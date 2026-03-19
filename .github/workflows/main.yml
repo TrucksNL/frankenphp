@@ -86,7 +86,7 @@ jobs:
           cache-to: type=gha,mode=max
           file: ./${{ matrix.os-flavour }}.Dockerfile
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,"name=${{ env.IMAGE_NAME }},${{ env.GHCR_REPO }}",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=${{ env.IMAGE_NAME }},${{ env.GHCR_REPO }}",push-by-digest=true,name-canonical=true,push=true,compression=zstd,compression-level=3,force-compression=true
           platforms: ${{ matrix.platform }}
           provenance: mode=max
           sbom: true
