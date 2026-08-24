@@ -13,7 +13,7 @@ env:
   IMAGE_NAME: trucksnl/frankenphp
   GHCR_REPO: ghcr.io/trucksnl/frankenphp
   PHP_VERSIONS: '["8.3", "8.4"]'
-  FRANKENPHP_VERSIONS: '["1.11"]'
+  FRANKENPHP_VERSIONS: '["1.11","1.12"]'
   OS_FLAVOURS: '["alpine"]'
 
 jobs:
