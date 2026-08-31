@@ -1,0 +1,36 @@
+{
+        log {
+                level {$CADDY_SERVER_LOG_LEVEL:info}
+                output stderr
+                format json {
+                        # This maps the keys to what Google Cloud expects
+                        level_key severity
+                        message_key message
+                        time_format rfc3339
+                }
+        }
+
+        frankenphp {
+                {$FRANKENPHP_CONFIG}
+        }
+}
+
+:80 {
+        root public/
+        log {
+                level {$CADDY_SERVER_HTTP_LOG_LEVEL:info}
+                output stderr
+                format json {
+                        # This maps the keys to what Google Cloud expects
+                        level_key severity
+                        message_key message
+                        time_format rfc3339
+                }
+        }
+
+        encode zstd br gzip
+        {$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+        php_server
+        file_server
+}
