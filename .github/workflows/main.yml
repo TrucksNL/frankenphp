@@ -152,9 +152,18 @@ jobs:
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          annotations=()
+          while IFS= read -r label; do
+            [[ -n "$label" ]] && annotations+=(--annotation "$label")
+          done <<< "$DOCKER_METADATA_OUTPUT_LABELS"
+
+          docker buildx imagetools create \
+            "${annotations[@]}" \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.IMAGE_NAME }}@sha256:%s ' *)
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          docker buildx imagetools create \
+            "${annotations[@]}" \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.GHCR_REPO }}@sha256:%s ' *)
 
       - name: Inspect image
@@ -272,15 +281,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.IMAGE_NAME }}
+            ${{ env.GHCR_REPO }}
+          tags: |
+            ${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
+
       - name: Tag final images
         run: |
+          annotations=()
+          while IFS= read -r label; do
+            [[ -n "$label" ]] && annotations+=(--annotation "$label")
+          done <<< "$DOCKER_METADATA_OUTPUT_LABELS"
+
           # Tag without build number for Docker Hub
           docker buildx imagetools create \
+            "${annotations[@]}" \
             -t ${{ env.IMAGE_NAME }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }} \
             ${{ env.IMAGE_NAME }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
 
           # Tag without build number for GHCR
           docker buildx imagetools create \
+            "${annotations[@]}" \
             -t ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }} \
             ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
 
