@@ -1,7 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM php
 
-ENV APP_RUNTIME=Runtime\\FrankenPhpSymfony\\Runtime
 ENV FRANKENPHP_CONFIG="worker /app/public/index.php"
 # We put our apps behind an HTTPS load balancer, so all internal traffic is HTTP port 80
 ENV SERVER_NAME=:80

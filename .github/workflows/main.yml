@@ -13,7 +13,7 @@ env:
   GHCR_REPO: ghcr.io/trucksnl/frankenphp
   PHP_VERSIONS: '["8.3", "8.4"]'
   FRANKENPHP_VERSIONS: '["1.11","1.12","1.13"]'
-  OS_FLAVOURS: '["alpine"]'
+  OS_FLAVOURS: '["alpine","trixie"]'
 
 jobs:
   setup:
