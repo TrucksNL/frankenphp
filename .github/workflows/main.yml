@@ -77,6 +77,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: ./${{ matrix.os-flavour }}.Dockerfile
+          target: runtime
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,"name=${{ env.GHCR_REPO }}",push-by-digest=true,name-canonical=true,push=true,compression=zstd,compression-level=3,force-compression=true
           platforms: ${{ matrix.platform }}
@@ -258,3 +259,70 @@ jobs:
       - name: Inspect final images
         run: |
           docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
+
+  # The build variant (runtime plus git and ssh) is a thin layer on top of the tested runtime image,
+  # so the PHP extensions are not built or downloaded a second time.
+  build-variant:
+    runs-on: ubuntu-24.04-arm
+    needs:
+      - setup
+      - test
+    strategy:
+      fail-fast: false
+      matrix:
+        frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
+        os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
+        php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
+    env:
+      IMAGE_TAG: ${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GHCR_REPO }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          build-contexts: |
+            runtime=docker-image://${{ env.GHCR_REPO }}:${{ env.IMAGE_TAG }}-v${{ github.run_number }}
+          file: ./${{ matrix.os-flavour }}.Dockerfile
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          provenance: mode=max
+          push: true
+          sbom: true
+          tags: |
+            ${{ env.GHCR_REPO }}:${{ env.IMAGE_TAG }}-v${{ github.run_number }}-build
+            ${{ github.event_name != 'pull_request' && format('{0}:{1}-build', env.GHCR_REPO, env.IMAGE_TAG) || '' }}
+          target: build
+
+      - name: Smoke test
+        run: |
+          docker run --rm --entrypoint sh \
+            ${{ env.GHCR_REPO }}:${{ env.IMAGE_TAG }}-v${{ github.run_number }}-build \
+            -c 'git --version && ssh -V && test "$(id -un)" = www-data && ssh-keygen -F ssh.bitbucket.org -f /etc/ssh/ssh_known_hosts'
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ env.IMAGE_TAG }}-v${{ github.run_number }}-build
