@@ -4,7 +4,7 @@ FROM php
 
 WORKDIR /app
 
-COPY --link --chown=www-data:www-data composer.* symfony.* ./
+COPY --chown=www-data:www-data composer.* symfony.* ./
 
 RUN --mount=from=composer/composer:2-bin,source=/composer,target=/usr/local/bin/composer \
 	set -eux; \
