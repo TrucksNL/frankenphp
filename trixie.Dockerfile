@@ -2,8 +2,8 @@
 FROM php
 
 ENV FRANKENPHP_CONFIG="worker /app/public/index.php"
-# We put our apps behind an HTTPS load balancer, so all internal traffic is HTTP port 80
-ENV SERVER_NAME=:80
+# We put our apps behind an HTTPS load balancer, so all internal traffic is HTTP port 8080
+ENV SERVER_NAME=:8080
 
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     --mount=target=/var/cache/apt,type=cache,sharing=locked \
@@ -27,8 +27,11 @@ RUN install-php-extensions \
     sysvsem \
     zip
 
-RUN mkdir -p /root/.ssh/ /app/var/log/ /app/var/cache/ \
-    && ssh-keyscan bitbucket.org > /root/.ssh/known_hosts
+# Run as www-data: home dir holds SSH known_hosts, Caddy needs writable data/config dirs.
+RUN set -eux; \
+    home="$(getent passwd www-data | cut -d: -f6)"; \
+    mkdir -p "$home/.ssh" /app/var/log /app/var/cache /data/caddy /config/caddy; \
+    ssh-keyscan ssh.bitbucket.org > "$home/.ssh/known_hosts"; \
+    chown -R www-data:www-data "$home" /app /data /config
 
-COPY --from=composer/composer:2-bin /composer /usr/local/bin/composer
-ENV COMPOSER_ALLOW_SUPERUSER=1
+USER www-data
