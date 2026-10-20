@@ -17,7 +17,7 @@ env:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       php-versions: ${{ steps.set-vars.outputs.php-versions }}
       frankenphp-versions: ${{ steps.set-vars.outputs.frankenphp-versions }}
@@ -32,7 +32,7 @@ jobs:
 
   build:
     needs: setup
-    runs-on: ${{ startsWith(matrix.platform, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    runs-on: ${{ startsWith(matrix.platform, 'linux/arm') && 'ubuntu-26.04-arm' || 'ubuntu-26.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -99,7 +99,7 @@ jobs:
           retention-days: 1
 
   merge:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     needs:
       - setup
       - build
@@ -146,7 +146,7 @@ jobs:
           docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
 
   test:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     needs:
       - setup
       - merge
@@ -229,7 +229,7 @@ jobs:
 
   finalize:
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - setup
       - test
@@ -263,7 +263,7 @@ jobs:
   # The build variant (runtime plus git and ssh) is a thin layer on top of the tested runtime image,
   # so the PHP extensions are not built or downloaded a second time.
   build-variant:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     needs:
       - setup
       - test
