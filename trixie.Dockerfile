@@ -33,7 +33,7 @@ RUN set -eux; \
 
 USER www-data
 
-# Same as runtime, plus git and ssh for fetching private dependencies (e.g. composer VCS installs).
+# Same as runtime, plus git, ssh and Composer for fetching private dependencies (e.g. composer VCS installs).
 # CI overrides the runtime stage with the published runtime image (--build-context runtime=docker-image://...),
 # so only the layers below are built.
 FROM runtime AS build
@@ -46,6 +46,9 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
     && apt-get -y --no-install-recommends install \
     git \
     openssh-client
+
+# Composer, pinned to a minor version; patch releases are picked up on rebuild.
+COPY --from=composer/composer:2.10-bin /composer /usr/local/bin/composer
 
 # Bitbucket host keys, from https://bitbucket.org/site/ssh (verify against Atlassian's published fingerprints).
 # System-wide, so ssh works for any user.
