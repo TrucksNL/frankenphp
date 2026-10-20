@@ -34,6 +34,8 @@ RUN set -eux; \
 USER www-data
 
 # Same as runtime, plus git and ssh for fetching private dependencies (e.g. composer VCS installs).
+# CI overrides the runtime stage with the published runtime image (--build-context runtime=docker-image://...),
+# so only the layers below are built.
 FROM runtime AS build
 
 USER root
