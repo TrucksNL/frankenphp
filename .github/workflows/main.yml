@@ -181,7 +181,7 @@ jobs:
           # Start the container
           docker run -d \
             --name demo-test-${{ github.run_number }} \
-            -p 8080:80 \
+            -p 8080:8080 \
             demo-test:${{ github.run_number }}
 
           # Wait for the application to be ready
