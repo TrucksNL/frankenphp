@@ -42,6 +42,7 @@ jobs:
         frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
         os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
         php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
+        variant: [runtime, build]
     steps:
       - name: Prepare
         run: |
@@ -77,6 +78,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: ./${{ matrix.os-flavour }}.Dockerfile
+          target: ${{ matrix.variant }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,"name=${{ env.GHCR_REPO }}",push-by-digest=true,name-canonical=true,push=true,compression=zstd,compression-level=3,force-compression=true
           platforms: ${{ matrix.platform }}
@@ -92,7 +94,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ matrix.frankenphp-version }}-${{ matrix.php-version }}-${{ matrix.os-flavour }}-${{ env.PLATFORM_PAIR }}
+          name: digests-${{ matrix.frankenphp-version }}-${{ matrix.php-version }}-${{ matrix.os-flavour }}-${{ matrix.variant }}-${{ env.PLATFORM_PAIR }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -107,12 +109,16 @@ jobs:
         frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
         os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
         php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
+        variant: [runtime, build]
+    # The runtime variant keeps the plain tags; the build variant (with git and ssh) gets a '-build' suffix.
+    env:
+      TAG_SUFFIX: ${{ matrix.variant == 'build' && '-build' || '' }}
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: digests-${{ matrix.frankenphp-version }}-${{ matrix.php-version }}-${{ matrix.os-flavour }}-*
+          pattern: digests-${{ matrix.frankenphp-version }}-${{ matrix.php-version }}-${{ matrix.os-flavour }}-${{ matrix.variant }}-*
           merge-multiple: true
 
       - name: Login to GHCR
@@ -132,7 +138,7 @@ jobs:
           images: |
             ${{ env.GHCR_REPO }}
           tags: |
-            ${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
+            ${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}${{ env.TAG_SUFFIX }}
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
@@ -142,7 +148,7 @@ jobs:
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
+          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}${{ env.TAG_SUFFIX }}
 
   test:
     runs-on: ubuntu-24.04-arm
@@ -155,6 +161,10 @@ jobs:
         frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
         os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
         php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
+        variant: [runtime, build]
+    # The runtime variant keeps the plain tags; the build variant (with git and ssh) gets a '-build' suffix.
+    env:
+      TAG_SUFFIX: ${{ matrix.variant == 'build' && '-build' || '' }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -167,22 +177,22 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-contexts: |
-            php=docker-image://${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
+            php=docker-image://${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}${{ env.TAG_SUFFIX }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: test/demo
           file: test/demo/Dockerfile
           load: true
           push: false
-          tags: demo-test:${{ github.run_number }}
+          tags: demo-test:${{ github.run_number }}-${{ matrix.variant }}
 
       - name: Run demo application
         run: |
           # Start the container
           docker run -d \
-            --name demo-test-${{ github.run_number }} \
+            --name demo-test-${{ github.run_number }}-${{ matrix.variant }} \
             -p 8080:8080 \
-            demo-test:${{ github.run_number }}
+            demo-test:${{ github.run_number }}-${{ matrix.variant }}
 
           # Wait for the application to be ready
           echo "Waiting for application to start..."
@@ -223,8 +233,8 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker stop demo-test-${{ github.run_number }} || true
-          docker rm demo-test-${{ github.run_number }} || true
+          docker stop demo-test-${{ github.run_number }}-${{ matrix.variant }} || true
+          docker rm demo-test-${{ github.run_number }}-${{ matrix.variant }} || true
 
   finalize:
     if: github.event_name != 'pull_request'
@@ -237,6 +247,10 @@ jobs:
         frankenphp-version: ${{ fromJSON(needs.setup.outputs.frankenphp-versions) }}
         os-flavour: ${{ fromJSON(needs.setup.outputs.os-flavours) }}
         php-version: ${{ fromJSON(needs.setup.outputs.php-versions) }}
+        variant: [runtime, build]
+    # The runtime variant keeps the plain tags; the build variant (with git and ssh) gets a '-build' suffix.
+    env:
+      TAG_SUFFIX: ${{ matrix.variant == 'build' && '-build' || '' }}
     steps:
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -252,9 +266,9 @@ jobs:
         run: |
           # Tag without build number for GHCR
           docker buildx imagetools create \
-            -t ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }} \
-            ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}
+            -t ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}${{ env.TAG_SUFFIX }} \
+            ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}-v${{ github.run_number }}${{ env.TAG_SUFFIX }}
 
       - name: Inspect final images
         run: |
-          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}
+          docker buildx imagetools inspect ${{ env.GHCR_REPO }}:${{ matrix.frankenphp-version }}-php${{ matrix.php-version }}-${{ matrix.os-flavour }}${{ env.TAG_SUFFIX }}
