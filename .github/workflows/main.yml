@@ -321,7 +321,7 @@ jobs:
         run: |
           docker run --rm --entrypoint sh \
             ${{ env.GHCR_REPO }}:${{ env.IMAGE_TAG }}-v${{ github.run_number }}-build \
-            -c 'git --version && ssh -V && test "$(id -un)" = www-data && ssh-keygen -F ssh.bitbucket.org -f /etc/ssh/ssh_known_hosts'
+            -c 'git --version && ssh -V && composer --version && test "$(id -un)" = www-data && ssh-keygen -F ssh.bitbucket.org -f /etc/ssh/ssh_known_hosts'
 
       - name: Inspect image
         run: |
