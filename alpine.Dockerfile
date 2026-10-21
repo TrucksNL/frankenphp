@@ -35,6 +35,10 @@ RUN --mount=from=ghcr.io/php/pie:1.5.2-bin,source=/pie,target=/usr/local/bin/pie
     apk del .pie-build-deps; \
     rm -rf /root/.pie /tmp/*
 
+# curl is only needed to fetch extensions above; a webshell/RCE shouldn't find it on disk afterwards.
+# ext-curl (used by Guzzle etc.) is unaffected - that's the PHP extension, not this binary.
+RUN apk del curl
+
 # Run as www-data: Caddy needs writable data/config dirs.
 RUN set -eux; \
     home="$(getent passwd www-data | cut -d: -f6)"; \
