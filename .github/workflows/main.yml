@@ -11,7 +11,7 @@ on:
 
 env:
   GHCR_REPO: ghcr.io/trucksnl/frankenphp
-  PHP_VERSIONS: '["8.3", "8.4"]'
+  PHP_VERSIONS: '["8.3", "8.4", "8.5"]'
   FRANKENPHP_VERSIONS: '["1.13"]'
   OS_FLAVOURS: '["alpine","trixie"]'
 
