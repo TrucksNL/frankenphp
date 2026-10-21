@@ -14,13 +14,26 @@ RUN install-php-extensions \
     bcmath \
     gd \
     intl \
-    mongodb-stable \
     mysqli \
     opcache \
     pdo_mysql \
-    redis-stable \
     sysvsem \
     zip
+
+# excimer (required for Sentry profiling), redis and mongodb are installed with PIE (https://github.com/php/pie)
+# instead of PECL, so the build does not depend on pecl.php.net. PIE is only mounted, not kept in the image.
+ARG EXCIMER_VERSION=1.2.7
+ARG PHPREDIS_VERSION=6.3.0
+ARG MONGODB_VERSION=2.5.5
+RUN --mount=from=ghcr.io/php/pie:1.5.2-bin,source=/pie,target=/usr/local/bin/pie \
+    set -eux; \
+    apk add --no-cache libsasl libssl3 snappy zlib zstd-libs; \
+    apk add --no-cache --virtual .pie-build-deps $PHPIZE_DEPS cyrus-sasl-dev linux-headers openssl-dev snappy-dev zlib-dev zstd-dev; \
+    pie install "wikimedia/excimer:${EXCIMER_VERSION}"; \
+    pie install "phpredis/phpredis:${PHPREDIS_VERSION}"; \
+    pie install "mongodb/mongodb-extension:${MONGODB_VERSION}"; \
+    apk del .pie-build-deps; \
+    rm -rf /root/.pie /tmp/*
 
 # Run as www-data: Caddy needs writable data/config dirs.
 RUN set -eux; \
